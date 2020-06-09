@@ -19,18 +19,24 @@ st.write("Reading the mind of Elon Musk for fun and profit!  We've tagged \
          trading strategy for Tesla stock using Elon's twitter behavior \
          to set buy/sell orders.")
 #side bar sliders
-poslim = st.sidebar.slider("Positive Sentiment Threshold", 0., 1., .15)
-neglim = st.sidebar.slider("Negative Sentiment Threshold", 0., 1., .15)
-sell_delay = st.sidebar.slider("Delay for re-buying TSLA", 1, 10, 1)
-buy_delay = st.sidebar.slider("Delay for re-selling TSLA", 1, 10, 1)
+poslim = st.sidebar.slider("Positive Sentiment Threshold (buy trigger)",\
+                                                                0., 1., .15)
+neglim = st.sidebar.slider("Negative Sentiment Threshold (sell trigger)",\
+                                                                0., 1., .15)
+sell_delay = st.sidebar.slider("Delay for re-buying TSLA (after sell order)",\
+                                                                1, 10, 1)
+buy_delay = st.sidebar.slider("Delay for re-selling TSLA (after buy order)",\
+                                                                1, 10, 1)
 #convert sider input to Datetime timedelta's
 sell_delay = datetime.timedelta(days=sell_delay)
 buy_delay = datetime.timedelta(days=buy_delay)
 #how much money we have to play with
 init_position = st.sidebar.slider(\
-                    "Initial position in $", 0., 10_000., 5_000.)
+                                    "Initial position in $ (how much stock)",\
+                                    0., 10_000., 5_000.)
 init_capital = st.sidebar.slider(\
-                    "Initial capital in $", 0., 10_000., 5_000.)
+                                    "Initial capital in $ (how much cash",\
+                                    0., 10_000., 5_000.)
 #Loading datasets
 tsla_df = pd.read_csv('../data/raw/tsla_stock_price.csv')\
                         .drop('Unnamed: 0',axis='columns')
@@ -43,6 +49,7 @@ anomalies_df = pd.read_csv(\
 tsla_df['DateTime'] = pd.to_datetime(tsla_df['DateTime'])
 elon_df['Time'] = pd.to_datetime(elon_df['Time'])
 anomalies_df['Time'] = pd.to_datetime(anomalies_df['Time'])
+anomalies_df['stock_time'] = pd.to_datetime(anomalies_df['stock_time'])
 anomaly_only_df = anomalies_df[anomalies_df['anomalous']!=0.]
 no_anomaly_df = anomalies_df[anomalies_df['anomalous']!=1.]
 
