@@ -165,14 +165,14 @@ timezone = pytz.timezone('UTC')
 start_date = timezone.localize(start_date)
 end_date = timezone.localize(end_date)
 # Convert data frames to numpy format for faster processing 
-tsla_np,anomaly_only_np,sell_delay,buy_delay,start_time = \
-            tu.convert_dataframes_to_numpy(start_date,tsla_df,anomaly_only_df,
-                                        buy_delay,sell_delay)
+tsla_np,anomaly_only_np,sell_delay,buy_delay,start_time,end_time = \
+            tu.convert_dataframes_to_numpy(start_date, end_date,tsla_df,\
+                                        anomaly_only_df, buy_delay,sell_delay)
 # Run the asset strategy calculation
 strat_np,hold_np = tu.asset_strategy_calculation_numpy(\
                                     poslim,neglim,init_position,init_capital,\
                                     buy_delay,sell_delay,anomaly_only_np,\
-                                    tsla_np,start_time,rule_pos,\
+                                    tsla_np,start_time,end_time,rule_pos,\
                                     rule_neu,rule_neg)
 # Convert the numpy arrays back to data frames
 strat_df = tu.convert_trading_to_df(strat_np,start_date) 

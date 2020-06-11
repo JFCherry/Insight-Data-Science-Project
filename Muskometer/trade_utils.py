@@ -65,7 +65,7 @@ def apply_rules(index_i,index_j,stock_np,anomaly_np,buy_sell_np,rule,
     else: #something went wrong
         return buy_sell_np
 
-def convert_dataframes_to_numpy(start_date,stock_df,anomaly_only_df,
+def convert_dataframes_to_numpy(start_date,end_date,stock_df,anomaly_only_df,
                                 buy_delay,sell_delay):
     """Converts dataframes and delta times to numpy arrays and floats."""
     #convert datetimes to floats (s after start date)
@@ -86,8 +86,9 @@ def convert_dataframes_to_numpy(start_date,stock_df,anomaly_only_df,
     # Convert the sell_delay and buy_delay to seconds
     sell_delay = sell_delay.total_seconds()
     buy_delay = buy_delay.total_seconds()
+    end_time = (end_date - start_date).total_seconds()
     start_time = 0.
-    return tsla_np,anomaly_only_np,sell_delay,buy_delay,start_time
+    return tsla_np,anomaly_only_np,sell_delay,buy_delay,start_time,end_time
 
 def convert_to_seconds_after_start(start_time,df,time_column):
     """A function to turn the datetime data from the
@@ -104,7 +105,8 @@ def convert_trading_to_df(df,start_date):
     out_df = pd.DataFrame(data=df,    # values
                      index=range(len(df[:,0])),    # 1st column as index
                      columns=['time_in_sec','num_shares','position',\
-                             'capital','total','relative'])
+                             'capital','total','relative',
+                             'trade_success','trade_executed'])
     date_list = [start_date + \
                      datetime.timedelta(seconds = sec) for sec in df[:,0]]
     out_df['Time'] = date_list
@@ -113,7 +115,7 @@ def convert_trading_to_df(df,start_date):
 
 def asset_strategy_calculation_numpy(poslim,neglim,init_position,init_capital,\
                                     buy_delay,sell_delay,anomaly_only_np,\
-                                    tsla_np,start_time,rule_pos,\
+                                    tsla_np,start_time,end_time,rule_pos,\
                                     rule_neu,rule_neg,rand_flag = False):
     """The buying and selling strategy implementing tweet inforation""" 
     #the index of true_start_date
@@ -143,14 +145,17 @@ def asset_strategy_calculation_numpy(poslim,neglim,init_position,init_capital,\
             #this anomaly happened before we started trading
             #do nothing
             pass
-        elif anomaly_only_np[j,3] < poslim and \
-                anomaly_only_np[j,3] > -neglim : #we have a neutral anomaly
+        elif anomaly_only_np[j,2] > end_time:
+            #this anomaly happens after we're done trading
+            #do nothing
+            pass
+        elif anomaly_only_np[j,3] <= poslim and \
+                anomaly_only_np[j,3] >= -neglim : #we have a neutral anomaly
             #apply defined trading rule
             buy_and_sell_np = apply_rules(i,j,tsla_np,anomaly_only_np,\
                                           buy_and_sell_np,rule_neu,\
                                           buy_delay,sell_delay,\
                                           start_index,rand_flag)
-            pass
         elif anomaly_only_np[j,3] >= poslim : #we have a positive anomaly
             #apply defined trading rule
             buy_and_sell_np = apply_rules(i,j,tsla_np,anomaly_only_np,\
@@ -174,74 +179,79 @@ def asset_strategy_calculation_numpy(poslim,neglim,init_position,init_capital,\
     buy_and_sell_np[:,5] = buy_and_sell_np[:,4]/hold_np[:,4]
     return buy_and_sell_np,hold_np
     
-def grid_search_trading_algo(stock_df,anomaly_only_df,start_date):
+def grid_search_training_algo(tsla_df,anomaly_only_df,start_date,end_date):
     #parameters
-    timezone = pytz.timezone('UTC')
-    start_date = timezone.localize(datetime.datetime(2015,1,1))
+    #timezone = pytz.timezone('UTC')
+    #start_date = timezone.localize(datetime.datetime(2015,1,1))
+    #end_date = timezone.localize(datetime.datetime(2015,1,1))
     pos_lims = np.linspace(0.,1.,11)
     neg_lims = np.linspace(0.,1.,11)
-    buy_delays = np.linspace(1,10,10)*86400. # delay time in seconds
-    sell_delays = np.linspace(1,10,10)*86400. # delay time in seconds
-    pos_rules = ['buy','nothing','sell']
-    neu_rules = ['buy','nothing','sell']
-    neg_rules = ['buy','nothing','sell']
+    buy_delays = 86400.#np.linspace(1,10,10)*86400. # delay time in seconds
+    sell_delays = 86400.#np.linspace(1,10,10)*86400. # delay time in seconds
+    pos_rules = ['buy','sell']
+    neu_rules = ['buy','sell']
+    neg_rules = ['buy','sell']
     #convert dataframes to numpy input
-    tsla_np,anomaly_only_np,sell_delay,buy_delay,start_time = \
-            convert_dataframes_to_numpy(start_date,stock_df,anomaly_only_df,
-                                        datetime.timedelta(days=1),datetime.timedelta(days=1))
+    tsla_np,anomaly_only_np,sell_delay,buy_delay,start_time,end_time = \
+            convert_dataframes_to_numpy(start_date,end_date,tsla_df,\
+                                        anomaly_only_df,\
+                                        datetime.timedelta(days=1),\
+                                        datetime.timedelta(days=1))
     #array for output
     #use fractional performance as the test metric
-    output = np.zeros([11,11,10,10,3,3,3],np.double)
+    output = np.zeros([len(pos_lims),len(neg_lims),2,2,2,2],np.double)
     for i in range(len(pos_lims)):
         for j in range(len(neg_lims)):
-            for k in range(len(buy_delays)):
-                for l in range(len(sell_delays)):
-                    for m in range(len(pos_rules)):
-                        for n in range(len(neu_rules)):
-                            for o in range(len(neg_rules)):
-                                #print (i,j,k,l,m,n,o)
-                                #print (pl,nl,buy_d,sell_d,posr,neur,negr,start_time)
-                                temp1,temp2 = asset_strategy_calculation_numpy\
-                                                        (pos_lims[i],neg_lims[j],5000.,5000.,\
-                                                        buy_delays[k],sell_delays[l],anomaly_only_np,\
-                                                        tsla_np,start_time,pos_rules[m],\
-                                                        neu_rules[n],neg_rules[o])
-                                output[i,j,k,l,m,n,o] = temp1[-1,5] #this is the final fractional performance
+    #for k in range(len(buy_delays)):
+        #for l in range(len(sell_delays)):
+            for m in range(2):
+                for n in range(2):
+                    for o in range(2):
+                        #print (i,j,k,l,m,n,o)
+                        #print (pl,nl,buy_d,sell_d,posr,neur,negr,start_time)
+                        temp1,temp2 = asset_strategy_calculation_numpy\
+                                    (pos_lims[i],neg_lims[j],5000.,5000.,\
+                                    buy_delays,sell_delays,anomaly_only_np,\
+                                    tsla_np,start_time,end_time,pos_rules[m],\
+                                    neu_rules[n],neg_rules[o])
+                        # this is the total value in index 1 and trade 
+                        # success rate in index 2
+                        output[i,j,m,n,o,:] = [temp1[-1,4],\
+                                              sum(temp1[:,6])/sum(temp1[:,7])] 
                                 
     return output
     
-def test_random_tweets(stock_df,anomalies_df):
+def test_random_tweets_optimize(tsla_df,anomalies_df):
     #from previous results: 
     timezone = pytz.timezone('UTC')
     start_date = timezone.localize(datetime.datetime(2015,1,1))
-    pos_lims = 0.
-    neg_lims = .8
-    buy_delays = 10.*86400
-    sell_delays = 1.*86400
-    pos_rules = 'buy'
-    neu_rules = 'buy'
-    neg_rules = 'sell'
+    end_date = timezone.localize(datetime.datetime(2020,2,1))
+    pos_lims = np.linspace(0.,1.,6)
+    neg_lims = np.linspace(0.,1.,6)
+    buy_delays = 86400.#np.linspace(1,10,10)*86400. # delay time in seconds
+    sell_delays = 86400.#np.linspace(1,10,10)*86400. # delay time in seconds
+    pos_rules = ['buy','sell']
+    neu_rules = ['buy','sell']
+    neg_rules = ['buy','sell']
     #create initial array to old the output of each run
     final_results = np.array([])
-    for i in range(1000):#do one thousand samples
+    for i in range(100):#do one thousand samples
         #make fake list of anomalies from real tweets
         #using the real sentiment values from each
         anomaly_only_df = anomalies_df.sample(98).sort_values(by=['stock_time'])
         #convert dataframes to numpy input
-        tsla_np,anomaly_only_np,dummy1,dummy2,start_time = \
-                convert_dataframes_to_numpy(start_date,stock_df,anomaly_only_df,
+        tsla_np,anomaly_only_np,dummy1,dummy2,start_time,end_time = \
+                convert_dataframes_to_numpy(start_date,end_date,tsla_df,anomaly_only_df,
                                             datetime.timedelta(days=1),datetime.timedelta(days=1))
+        algo_opt = grid_search_training_algo(tsla_df,anomaly_only_df,start_date,end_date)
+        #indices of the tuning parameters that produce the best ROI performance
+        op_i = np.argwhere(np.amax(algo_opt[:,:,:,:,:,0]) == algo_opt[:,:,:,:,:,0])[0]
         #uncomment these lines for true random buy/sell orders
-        #run1,temp1 = asset_strategy_calculation_numpy\
-        #                                    (pos_lims,neg_lims,5000.,5000.,\
-        #                                    buy_delays,sell_delays,anomaly_only_np,\
-        #                                    tsla_np,start_time,pos_rules,\
-        #                                    neu_rules,neg_rules,rand_flag = True)
         run1,temp1 = asset_strategy_calculation_numpy\
-                                            (pos_lims,neg_lims,5000.,5000.,\
+                                            (pos_lims[op_i[0]],neg_lims[op_i[1]],5000.,5000.,\
                                             buy_delays,sell_delays,anomaly_only_np,\
-                                            tsla_np,start_time,pos_rules,\
-                                            neu_rules,neg_rules)
+                                            tsla_np,start_time,end_time,pos_rules[op_i[2]],\
+                                            neu_rules[op_i[3]],neg_rules[op_i[4]],rand_flag = False)
         if final_results.shape == (0,):#if this is the first run through
             final_results = run1.reshape(1,run1.shape[0],run1.shape[1])
         else:#stack the results into a single numpy array
