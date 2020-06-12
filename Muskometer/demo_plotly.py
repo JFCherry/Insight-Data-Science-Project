@@ -7,37 +7,38 @@ import pandas as pd
 import time
 import trade_utils as tu
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
-def nearest(items, pivot): #a function to search a set of items
-    #and return the closest match
-    return min(items, key=lambda x: abs(x - pivot))
 #Intro text    
 st.title('Muskometer')
 st.write('')
-st.markdown("### Reading the mind of Elon Musk for fun and profit!  We've tagged \
-         some of Elon Musk's tweet which we found strange.  Open up the \
-         side bar to see how they vary with sentiment and set up a \
+st.markdown("### Reading the mind of Elon Musk for fun and profit!  When Elon \
+         tweets something unusual, the market notices.  We've used a neural \
+         network to identify \
+         some of Elon Musk's tweets which are out of character.  Open up the \
+         side bar to see how those strange tweets vary with sentiment \
+         and set up a \
          trading strategy for Tesla stock using Elon's twitter behavior \
          to set buy/sell orders.")
 
 #side bar sliders
 poslim = st.sidebar.slider("Positive Sentiment Threshold (buy trigger)",\
-                                                                0., 1., .1)
+                                                                0., 1., .6)
 neglim = st.sidebar.slider("Negative Sentiment Threshold (sell trigger)",\
-                                                                0., 1., .8)
+                                                                0., 1., .3)
 rule_pos = st.sidebar.selectbox(\
                     "What type of trade is executed on a Positive anomaly?",\
                     ("buy","nothing","sell"), index = 0)
 rule_neu = st.sidebar.selectbox(\
                     "What type of trade is executed on a Neutral anomaly?",\
-                    ("buy","nothing","sell"), index = 0)
+                    ("buy","nothing","sell"), index = 2)
 rule_neg = st.sidebar.selectbox(\
                     "What type of trade is executed on a Negative anomaly?",\
-                    ("buy","nothing","sell"), index = 2)
-sell_delay = st.sidebar.slider("Delay for re-buying TSLA (after sell order)",\
-                                                                1, 10, 1)
-buy_delay = st.sidebar.slider("Delay for re-selling TSLA (after buy order)",\
-                                                                1, 10, 10)
+                    ("buy","nothing","sell"), index = 0)
+sell_delay = 1.#st.sidebar.slider("Delay for re-buying TSLA (after sell order)",\
+               #                                                 1, 10, 1)
+buy_delay = 1.#st.sidebar.slider("Delay for re-selling TSLA (after buy order)",\
+               #                                                 1, 10, 10)
 #convert sider input to Datetime timedelta's
 sell_delay = datetime.timedelta(days=sell_delay)
 buy_delay = datetime.timedelta(days=buy_delay)
@@ -51,11 +52,11 @@ init_capital = st.sidebar.slider(\
 #Loading datasets
 tsla_df = pd.read_csv('../data/raw/tsla_stock_price.csv')\
                         .drop('Unnamed: 0',axis='columns')
-elon_df = pd.read_csv('../data/raw/elonmusk.csv')\
+elon_df = pd.read_csv('../data/raw/elonmusk_tweets.csv')\
                         .drop('Unnamed: 0',axis='columns')\
                         .sort_values(by = 'Time')
 anomalies_df = pd.read_csv(\
-            '../data/processed/anomalyandstock_tagged_tweet_features.csv')\
+            '../data/processed/elonmusk_anomalyandstock_tagged_tweet_features.csv')\
             .drop('Unnamed: 0',axis='columns')
 elon_df['Time'] = pd.to_datetime(elon_df['Time'])
 anomalies_df['Time'] = pd.to_datetime(anomalies_df['Time'])
@@ -150,7 +151,7 @@ fig1.update_yaxes(zeroline=True, zerolinewidth=2, zerolinecolor='Black',
 st.plotly_chart(fig1,use_container_width=False) 
 #sets the starting date for the trading calculation
 start_date = st.date_input(label = 'Start trading on which day?', \
-                value=datetime.datetime(2015, 1, 1, 0, 0, 0), \
+                value=datetime.datetime(2016, 1, 1, 0, 0, 0), \
                 min_value=datetime.datetime(2010, 6, 3, 0, 0, 0),
                 max_value=datetime.datetime.today(), key=None)
 #sets the ending date for the trading calculation
@@ -178,7 +179,7 @@ strat_np,hold_np = tu.asset_strategy_calculation_numpy(\
 strat_df = tu.convert_trading_to_df(strat_np,start_date) 
 hold_df = tu.convert_trading_to_df(hold_np,start_date)                         
 # plot up the return data                         
-fig2 = go.Figure() 
+fig2 = make_subplots(specs=[[{"secondary_y": True}]]) 
 fig2.add_trace(go.Scatter(x=hold_df['Time'],
                           y=hold_df['total'],
                           line=dict(color = 'rgb(0,0,0)',width=2),
@@ -191,6 +192,12 @@ fig2.add_trace(go.Scatter(x=strat_df['Time'],
                           mode = 'lines', name='Traded Tesla Stock'
     )
 )
+#fig2.add_trace(go.Scatter(x=strat_df['Time'],
+#                          y=strat_df['total']/(init_position+init_capital),
+#                          line=dict(color = 'rgba(203,65,84,1.)',width=2),
+#                          mode = 'lines', name='Traded Tesla Stock'
+#    ),secondary_y=True
+#)
 fig2.update_layout(
     title="Portfolio Value",
     xaxis_title="Date",
@@ -206,26 +213,52 @@ fig2.update_layout(
 fig2.update_xaxes(zeroline=True, zerolinewidth=2, zerolinecolor='Black',
                   showgrid=True, gridwidth=1, gridcolor='rgba(0,0,0,.4)')
 fig2.update_yaxes(zeroline=True, zerolinewidth=2, zerolinecolor='Black',
-                  showgrid=True, gridwidth=1, gridcolor='rgba(0,0,0,.4)') 
+                  showgrid=True, gridwidth=1, gridcolor='rgba(0,0,0,.4)')
+#fig2.update_yaxes(title_text="ROI",secondary_y=True)  
 st.plotly_chart(fig2,use_container_width=False) 
 # Make a Return on Investment plot
+#fig3 = go.Figure() 
+#fig3.add_trace(go.Scatter(x=hold_df['Time'],
+#                          y=hold_df['total']/(init_position+init_capital),
+#                          line=dict(color = 'rgb(0,0,0)',width=2),
+#                          mode = 'lines', name='Held Tesla Stock'
+#    )
+#)
+#fig3.add_trace(go.Scatter(x=strat_df['Time'],
+#                          y=strat_df['total']/(init_position+init_capital),
+#                          line=dict(color = 'rgba(50, 168, 82, 1.)',width=2),
+#                          mode = 'lines', name='Traded Tesla Stock'
+#    )
+#)
+#fig3.update_layout(
+#    title="Return on Investment",
+#    xaxis_title="Date",
+#    yaxis_title="Final Value / Initial Value",
+#    width=800, height=400,
+#    plot_bgcolor = 'rgba(67,70,75,0.1)',
+#    font=dict(family="IBM Plex Sans",
+#        size=18,
+#        color="#262730"
+#    )
+#)
+# Make a Relative Performance
 fig3 = go.Figure() 
 fig3.add_trace(go.Scatter(x=hold_df['Time'],
-                          y=hold_df['total']/(init_position+init_capital),
+                          y=hold_df['relative'],
                           line=dict(color = 'rgb(0,0,0)',width=2),
                           mode = 'lines', name='Held Tesla Stock'
     )
 )
 fig3.add_trace(go.Scatter(x=strat_df['Time'],
-                          y=strat_df['total']/(init_position+init_capital),
+                          y=strat_df['relative'],
                           line=dict(color = 'rgba(50, 168, 82, 1.)',width=2),
                           mode = 'lines', name='Traded Tesla Stock'
     )
 )
 fig3.update_layout(
-    title="Return on Investment",
+    title="Relative Performance",
     xaxis_title="Date",
-    yaxis_title="Final Value / Initial Value",
+    yaxis_title="Traded Tesla / Held Tesla",
     width=800, height=400,
     plot_bgcolor = 'rgba(67,70,75,0.1)',
     font=dict(family="IBM Plex Sans",
@@ -233,6 +266,8 @@ fig3.update_layout(
         color="#262730"
     )
 )
+
+
 
 fig3.update_xaxes(zeroline=True, zerolinewidth=2, zerolinecolor='Black',
                   showgrid=True, gridwidth=1, gridcolor='rgba(0,0,0,.4)')

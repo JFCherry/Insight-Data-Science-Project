@@ -36,6 +36,11 @@ def apply_rules(index_i,index_j,stock_np,anomaly_np,buy_sell_np,rule,
         #shift the total capital for all days after the transaction
         #-start_index corrects for offset in indices with stock_np
         buy_sell_np[sell_index - start_index:,3] *= frac_change
+        #log the trade attempt
+        buy_sell_np[sell_index - start_index,7] = 1.
+        #log if the trade was a success
+        if frac_change >= 1.:
+            buy_sell_np[sell_index - start_index,6] = 1.
         return buy_sell_np
     elif rule == 'sell':
         sell_date = anomaly_np[index_j,2]
@@ -61,6 +66,11 @@ def apply_rules(index_i,index_j,stock_np,anomaly_np,buy_sell_np,rule,
         #compute the new position
         #-start_index corrects for offset in indices with stock_np
         buy_sell_np[buy_index - start_index:,2] = new_num_shares*stock_np[buy_index:,1]
+        #log the trade attempt
+        buy_sell_np[buy_index - start_index,7] = 1.
+        #log if the trade was a success
+        if buy_sell_np[sell_index-start_index,1] <= new_num_shares:
+            buy_sell_np[buy_index - start_index,6] = 1.
         return buy_sell_np
     else: #something went wrong
         return buy_sell_np
@@ -120,8 +130,8 @@ def asset_strategy_calculation_numpy(poslim,neglim,init_position,init_capital,\
     """The buying and selling strategy implementing tweet inforation""" 
     #the index of true_start_date
     start_index = np.argmin(np.abs(tsla_np[:,0]-start_time)) 
-    hold_np = np.zeros([len(tsla_np[start_index:,0]),6]) #initialize 
-    buy_and_sell_np = np.zeros([len(tsla_np[start_index:,0]),6]) #initialize
+    hold_np = np.zeros([len(tsla_np[start_index:,0]),8]) #initialize 
+    buy_and_sell_np = np.zeros([len(tsla_np[start_index:,0]),8]) #initialize
     hold_np[:,0] = tsla_np[start_index:,0] #set dates
     buy_and_sell_np[:,0] = tsla_np[start_index:,0] #set dates
     # Position growth scales with Tesla stock price
@@ -132,7 +142,7 @@ def asset_strategy_calculation_numpy(poslim,neglim,init_position,init_capital,\
     # buy_and sell_np needs to track the number of shares held
     buy_and_sell_np[:,1] = init_position/tsla_np[start_index,1]
     # and the value of those shares
-    buy_and_sell_np[:,2] = (tsla_np[start_index,1]*buy_and_sell_np[:,1])
+    buy_and_sell_np[:,2] = (tsla_np[start_index:,1]*buy_and_sell_np[:,1])
     # Capital growth only changes as a result of buy -> sell orders
     hold_np[:,3] = init_capital
     buy_and_sell_np[:,3] = init_capital
