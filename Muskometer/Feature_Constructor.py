@@ -106,7 +106,7 @@ def construct_features(tweets):
     return tweets
 
 def strip_down_to_features_and_rescale(df):
-    #drop improperly formatted data
+    #drop non-feature related data
     df = df.drop(['username','reply_to','retweets',
                   'tweet_id','favorites','hashtags','mentions',
                   'text','permalink','Time'],axis='columns')
@@ -127,7 +127,24 @@ def strip_down_to_features_and_rescale(df):
         negone_to_one_scale += [max(abs(df[x].min()),df[x].max())]
     return df,zero_to_one_scale,negone_to_one_scale
 
-
+def combine_with_old_unscaled_tweet_features_and_store(df,username = 'elonmusk'):
+    """Function to take the new tweets +10 data frame, process it for features,
+        and combine it with the old unscaled features data."""
+    # load old unscaled tweet data
+    uf_oldtweets_df = pd.read_csv('../data/cleaned/'+username+'_unscaled_tweet_features.csv')\
+                                .drop('Unnamed: 0',axis='columns')
+    uf_oldtweets_df['Time'] = pd.to_datetime(uf_oldtweets_df['Time'])
+    # compute the new tweet features
+    uf_newtweets_df = construct_features(df)
+    # combine the two data frames
+    result = pd.concat([uf_oldtweets_df,uf_new_tweets_df]).reset_index().drop('index',axis='columns')
+    # makes sure we're sorted properly in time order
+    result.sort_values(by='Time',ascending=True,inplace=True)
+    # eliminates duplicate entries
+    result.drop_duplicates(subset = ['Time'],inplace = True)
+    # store the results
+    result.to_csv('../data/cleaned/'+username+'_unscaled_tweet_features.csv')
+    return result
 
 if __name__ == '__main__':
     main()
