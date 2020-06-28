@@ -64,7 +64,7 @@ def reload_tweet_data(path,username="elonmusk"):
 def prepend_new_tweets(df_new,df_old): #adds the new tweets to the front of the data set and resets the index
     result = pd.concat([df_old,df_new]).reset_index().drop('index',axis='columns')
     #makes sure we're sorted properly in time order
-    result.sort_values(by='Time',ascending=True)
+    result.sort_values(by='Time',ascending=True,inplace=True)
     return result.reset_index().drop('index',axis='columns')
 
 def store_tweet_data(df,path,username="elonmusk"):
