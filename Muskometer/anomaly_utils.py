@@ -14,7 +14,7 @@ def fit_VAE(username):
     X = df.values
     ndim = X.shape[1] #the number of features
     random_state = np.random.RandomState(81)#Random seed
-    outlier_fraction = 0.01 #1% of all tweets are outliers
+    outlier_fraction = 0.007 #.7% of all tweets are outliers (best fit)
     classifiers = {
         'Variational Auto Encoder (VAE)': VAE(epochs=20,
                 contamination = outlier_fraction, random_state = random_state,
@@ -85,3 +85,6 @@ def fit_multiple_with_scores(username):
             score_out = np.vstack((scores_pred.reshape(1,len(score_out)),
                                     score_out))
     return pred_out,score_out
+
+if __name__ == '__main__':
+    main()

@@ -287,3 +287,4 @@ st.markdown("### Save your preferred trading model and sign up to be\
             tweet something out of the ordinary.")
 user_model = [poslim,neglim,rule_pos,rule_neu,rule_neg,buy_delay,sell_delay]
 user_email = st.text_input("email:", "")
+

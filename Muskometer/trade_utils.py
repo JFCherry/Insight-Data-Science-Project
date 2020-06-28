@@ -271,7 +271,7 @@ def find_best_performance(tsla_df,anomaly_only_df,start_date,end_date):
                         output[i,j,m,n,o,:] = [temp1[-1,4],\
                                               sum(temp1[:,6])/sum(temp1[:,7]),\
                                               sum(temp1[:,7])]
-    # Returns the array of indices, best return, best success rate                           
+    # Returns the array of indices, best return, best success rate, total trades                           
     return output, np.amax(output[:,:,:,:,:,0]), np.amax(output[:,:,:,:,:,1]),\
            output[np.where(np.amax(output[:,:,:,:,:,1]) ==\
            output[:,:,:,:,:,1])][0,2]   
@@ -350,3 +350,6 @@ def choose_random_tweets_optimize(tsla_df,anomalies_df,start_date,end_date,
         else:#stack the results into a single numpy array
             final_results = np.vstack((run1.reshape(1,run1.shape[0],run1.shape[1]),final_results))
     return final_results
+    
+if __name__ == '__main__':
+    main()
