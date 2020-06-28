@@ -43,7 +43,7 @@ def scrape_new_tweets(t_last_tweet,username = "elonmusk"):
         data["text"].append(t.text)
         data["permalink"].append(t.permalink)
     if len(data) == 0: #no new tweets
-        return None
+        return data
     else:
         #make a DataFrame out of the scraped tweets
         df = pd.DataFrame(data, columns=["username","tweet_id",
@@ -52,6 +52,7 @@ def scrape_new_tweets(t_last_tweet,username = "elonmusk"):
                                          "text","permalink"])        
         # Convert 'Time' column to datetime and strip time information.
         df['Time'] = pd.to_datetime(df['date'])
+        df.drop(labels=['date'],axis=1,inplace=True)
         return df.sort_values(by='Time',ascending=True)
     
 def reload_tweet_data(path,username="elonmusk"):
@@ -79,6 +80,7 @@ def scan_for_new_tweets(path,username="elonmusk"):
         return df_old
     else:
         df_combined = prepend_new_tweets(df_new,df_old)
+        df_combined.drop_duplicates(subset = ['tweet_id'],inplace=True)
         return df_combined
 
 if __name__ == '__main__':
