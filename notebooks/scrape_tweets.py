@@ -82,7 +82,7 @@ def scan_for_new_tweets(path,username="elonmusk"):
         return df_old
     else:
         df_combined = prepend_new_tweets(df_new,df_old)
-        return df_combined.drop_duplicates(subset = ['Time']),len(df_old)
+        return df_combined.drop_duplicates(subset = ['Time'])
 
 if __name__ == '__main__':
     main()
