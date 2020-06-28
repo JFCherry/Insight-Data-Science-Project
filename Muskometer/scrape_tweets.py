@@ -71,17 +71,18 @@ def prepend_new_tweets(df_new,df_old): #adds the new tweets to the front of the 
 def store_tweet_data(df,path,username="elonmusk"):
     df.to_csv(path+username+'_tweets.csv')
     return
-a
+
 def scan_for_new_tweets(path,username="elonmusk"):
+    """Scans for new tweets ad adds them to the end
+        of the old data frame"""
     df_old = reload_tweet_data(path,username) #get the old tweets
     #look for new tweets starting from latest date
     df_new = scrape_new_tweets(df_old['Time'].max(),username)
-    if df_new == None:# No new tweets
+    if len(df_new) == 0:# No new tweets
         return df_old
     else:
         df_combined = prepend_new_tweets(df_new,df_old)
-        df_combined.drop_duplicates(subset = ['tweet_id'],inplace=True)
-        return df_combined
+        return df_combined.drop_duplicates(subset = ['Time'])
 
 if __name__ == '__main__':
     main()
