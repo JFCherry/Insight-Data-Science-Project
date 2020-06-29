@@ -4,6 +4,26 @@ import pyod
 from pyod.models.vae import VAE
 from pyod.models.iforest import IForest
 
+def fit_VAE_direct(df):
+    """This is the function that performs unsupervised anomaly detection\
+        on the scaled tweet data from a user."""
+    #dataframe to array
+    X = df.values
+    ndim = X.shape[1] #the number of features
+    random_state = np.random.RandomState(81)#Random seed
+    outlier_fraction = 0.007 #.7% of all tweets are outliers (best fit)
+    classifiers = {
+        'Variational Auto Encoder (VAE)': VAE(epochs=20,
+                contamination = outlier_fraction, random_state = random_state,
+                encoder_neurons = [ndim,max(int(ndim/2),1),max(int(ndim/4),1)],
+                decoder_neurons = [max(int(ndim/4),1),max(int(ndim/2),1),ndim],
+                verbosity=0)
+    }
+    for i, (clf_name,clf) in enumerate(classifiers.items()):
+        clf.fit(X)
+        y_pred = clf.predict(X)
+    return y_pred
+    
 def fit_VAE(username):
     """This is the function that performs unsupervised anomaly detection\
         on the scaled tweet data from a user."""
