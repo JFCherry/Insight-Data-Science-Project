@@ -4,6 +4,13 @@ import pyod
 from pyod.models.vae import VAE
 from pyod.models.iforest import IForest
 
+def scan_for_new_anomalies(y_pred,n_old):
+    """Function that scans for new anomalies
+        based on how many anomalies where in the last
+        scan.  Simply returns a boolean True if there
+        is a new anomaly."""
+    return 1 in anom_predictions[n_old:]
+
 def fit_VAE_direct(df):
     """This is the function that performs unsupervised anomaly detection\
         on the scaled tweet data from a user."""
