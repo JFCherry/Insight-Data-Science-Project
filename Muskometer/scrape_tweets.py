@@ -79,10 +79,15 @@ def scan_for_new_tweets(path,username="elonmusk"):
     #look for new tweets starting from latest date
     df_new = scrape_new_tweets(df_old['Time'].max(),username)
     if len(df_new) == 0:# No new tweets
-        return df_old
+        return df_old,len(df_old),False
     else:
         df_combined = prepend_new_tweets(df_new,df_old)
-        return df_combined.drop_duplicates(subset = ['Time']),len(df_old)
+        df_combined.drop_duplicates(subset = ['Time'],inplace=True)
+    if len(df_old) == len(df_combined):
+        # also no new tweets
+        return df_old,len(df_old),False
+    else:  
+        return df_combined,len(df_old),True
 
 if __name__ == '__main__':
     main()
