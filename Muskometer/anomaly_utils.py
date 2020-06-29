@@ -9,7 +9,7 @@ def scan_for_new_anomalies(y_pred,n_old):
         based on how many anomalies where in the last
         scan.  Simply returns a boolean True if there
         is a new anomaly."""
-    return 1 in anom_predictions[n_old:]
+    return 1 in y_pred[n_old:]
 
 def fit_VAE_direct(df):
     """This is the function that performs unsupervised anomaly detection\
