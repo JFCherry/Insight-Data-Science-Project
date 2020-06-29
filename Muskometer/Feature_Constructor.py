@@ -106,7 +106,7 @@ def construct_features(tweets):
     return tweets
 
 def strip_down_to_features_and_rescale(df):
-    #drop non-feature related data
+    #drop improperly formatted data
     df = df.drop(['username','reply_to','retweets',
                   'tweet_id','favorites','hashtags','mentions',
                   'text','permalink','Time'],axis='columns')
@@ -116,16 +116,13 @@ def strip_down_to_features_and_rescale(df):
     negone_to_one = ['dcompound_dTime','dcompound_dTweet','integral_compound_5',
                     'integral_compound_10','delta_compound_mean','delta_compound_median']
     # shrink the scale for the zero_to_one features
-    zero_to_one_scale = df[zero_to_one].max()
     df[zero_to_one] /= df[zero_to_one].max()
     # shrink the scale for the -1 to 1 ranges
     # need to preserve true zero, however, so no shifting the mean
-    negone_to_one_scale = [] #list to hold the rescaling
     for x in negone_to_one:
         # this won't fill the entire range -1 to 1, but it preserves true 0
         df[x] /= max(abs(df[x].min()),df[x].max())
-        negone_to_one_scale += [max(abs(df[x].min()),df[x].max())]
-    return df,zero_to_one_scale,negone_to_one_scale
+    return df
 
 def combine_with_old_unscaled_tweet_features_and_store(df,username = 'elonmusk'):
     """Function to take the new tweets +10 data frame, process it for features,
