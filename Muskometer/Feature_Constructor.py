@@ -17,7 +17,7 @@ def standardize_text(df, text_field):
     df = df[df[text_field].notna()]
     return df
 
-def apply_vader(tweet,category): #gives back the float value of the vader sentiment
+def apply_vader(tweet,category,sid): #gives back the float value of the vader sentiment
     return sid.polarity_scores(tweet)[category]
 
 def tokenize_hashtags(df): #tokenize hashtags, using one hot encoding
@@ -61,6 +61,7 @@ def construct_features(tweets):
         sid = SentimentIntensityAnalyzer() #returns error if no lexicon
     except:
         nltk.download('vader_lexicon') #get the bloody lexicon
+        sid = SentimentIntensityAnalyzer() #returns error if no lexicon
     # Clean the text of the tweets
     tweets = standardize_text(tweets,"text")
     # Tokenize the hashtags
@@ -76,11 +77,11 @@ def construct_features(tweets):
     # Apply vader to the tweets
     for cat in vader_categories: #iterates over the categories
         #creates new feature each iteration
-        tweets['text_'+cat] = tweets.apply(lambda row : apply_vader(row['text'],cat), axis=1)
+        tweets['text_'+cat] = tweets.apply(lambda row : apply_vader(row['text'],cat,sid), axis=1)
     # Apply vader to the hashtags
     for cat in vader_categories: #iterates over the categories
         #creates new feature each iteration
-        tweets['hashtags_'+cat] = tweets.apply(lambda row : apply_vader(row['hashtags'],cat), axis=1)
+        tweets['hashtags_'+cat] = tweets.apply(lambda row : apply_vader(row['hashtags'],cat,sid), axis=1)
     #Do some temporal processing
     #Hour of the day
     tweets['hour'] = tweets['Time'].dt.hour

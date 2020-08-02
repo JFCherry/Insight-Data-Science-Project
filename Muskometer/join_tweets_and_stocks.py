@@ -30,18 +30,6 @@ def join_tweets_and_stocks(stock_df,tweet_df):
                          .apply(lambda row: nearest_price(\
                                             stock_df['DateTime'],row,stock_df))
     return tweet_df
-
-def join_tweets_stocks_anomalies(tweet_df,stock_df,anomalies):
-    # set new column in the tweet data frame to have the stock date
-    tweet_df['stock_time']=tweet_df['Time']\
-                         .apply(lambda row: nearest(stock_df['DateTime'],row))
-    # set new column in the tweet data frame to have the stock price
-    tweet_df['stock_price']=tweet_df['Time']\
-                         .apply(lambda row: nearest_price(\
-                                            stock_df['DateTime'],row,stock_df))
-    # set the tags for which tweets are anomalous
-    tweet_df['anomalous'] = anomalies
-    return tweet_df
  
 def load_stock_data(stock_name):
     stock_df = pd.read_csv('../data/raw/'+stock_name.lower()+'_stock_price.csv')\
